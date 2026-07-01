@@ -21,7 +21,7 @@
     "build": "next build",
     "start": "next start",
     "build:lib": "tsup",
-    "prepare": "tsup",
+    "prepublishOnly": "tsup",
     "test": "vitest run",
     "lint": "eslint"
   },
