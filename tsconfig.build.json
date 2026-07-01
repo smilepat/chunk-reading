@@ -1,0 +1,10 @@
+{
+  "//": "Library (tsup) build config — isolated from Next's auto-managed tsconfig.json (which re-adds `incremental` and breaks the .d.ts emit).",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "incremental": false,
+    "composite": false,
+    "declaration": true,
+    "noEmit": false
+  }
+}
