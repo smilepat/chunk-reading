@@ -1,7 +1,7 @@
 ---
 project: chunk-reading
 status: active
-progress: 88
+progress: 93
 updated: 2026-07-01
 pc: DESKTOP-JDF6C5D
 ---
@@ -24,7 +24,15 @@ Interactive Reading Coach의 **🇰🇷 직독직해 cue 기능을 독립 패키
 - [x] `npm install`(prepare→tsup) · `npm test`(10) · `npm run build`(데모 next build) ·
       `npx eslint` 전부 통과. lib 빌드 esm/cjs/d.ts + `. `에 "use client" 정확 배치 확인.
 - [x] GitHub 레포 생성(smilepat/chunk-reading, **private**, 기본 브랜치 main) + 초기 커밋 푸시.
-- [ ] (선택) Vercel 데모 배포 + GEMINI_API_KEY 등록
+- [x] **Vercel 데모 배포**: <https://chunk-reading.vercel.app> (team prompt-improvement-dm-pat).
+      GEMINI_API_KEY 등록(Production/Development). `/api/gloss` 라이브 스모크 통과.
+      주의: PowerShell 파이프가 BOM(U+FEFF)을 주입 → `cmd`의 `<` 리다이렉션으로 키 주입해 해결.
+- [x] **소비 앱 통합(csat-mastery)**: `npm i github:smilepat/chunk-reading`(프리빌트 dist) →
+      `src/app/api/gloss`(번들 라우트) + `src/app/literal`(직독직해 페이지). 기존 학습 플로우
+      무수정, build·typecheck OK, master 푸시 완료. 기존 GEMINI_API_KEY 재사용.
+- [x] **패키지 배포 방식**: prebuilt `dist/` 저장소 커밋 + `prepare` 제거(설치시 빌드 X) →
+      소비 앱 설치가 빠르고 devDep 불필요. 유지보수 시 `npm run build:lib` 후 dist 커밋.
+- [ ] (선택) csat-mastery `learn/[slug]`의 `passage_text`에 `<ChunkReading/>` 임베드(학습 플로우 내).
 - [ ] (선택) npm publish (지금은 `github:smilepat/chunk-reading`로 설치 가능)
 
 ## ⏭️ 다음에 할 일 (Next Actions)
