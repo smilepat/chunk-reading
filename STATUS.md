@@ -33,7 +33,9 @@ Interactive Reading Coach의 **🇰🇷 직독직해 cue 기능을 독립 패키
       함정 3가지 해결: (1) **repo private → public 전환**(Vercel이 git 의존성 fetch 가능).
       (2) csat는 **pnpm** 프로젝트 → npm으로 설치해 pnpm-lock 미갱신으로 frozen-lockfile 빌드
       실패 → `pnpm install`로 lock 동기화. (3) csat GEMINI_API_KEY가 **HTTP-referer 제한**(브라우저용)
-      이라 서버 gloss 403 → 전용 **GLOSS_GEMINI_KEY**(제한 없는 키) 우선 사용하도록 라우트 수정.
+      이라 서버 gloss 403 → Google Cloud에서 애플리케이션 제한을 **없음**(API 제한은 Gemini API 유지)으로
+      풀어 서버 호출 허용. 임시 우회(GLOSS_GEMINI_KEY) 제거, 라우트는 `createGlossRoute()`로 원복.
+      최종: csat 자기 GEMINI_API_KEY로 `/api/gloss` 프로덕션 검증 완료.
 - [x] **패키지 배포 방식**: prebuilt `dist/` 저장소 커밋 + `prepare` 제거(설치시 빌드 X) →
       소비 앱 설치가 빠르고 devDep 불필요. 유지보수 시 `npm run build:lib` 후 dist 커밋.
 - [ ] (선택) csat-mastery `learn/[slug]`의 `passage_text`에 `<ChunkReading/>` 임베드(학습 플로우 내).
