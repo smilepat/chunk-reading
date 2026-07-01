@@ -1,7 +1,7 @@
 ---
 project: chunk-reading
 status: active
-progress: 80
+progress: 88
 updated: 2026-07-01
 pc: DESKTOP-JDF6C5D
 ---
@@ -21,8 +21,9 @@ Interactive Reading Coach의 **🇰🇷 직독직해 cue 기능을 독립 패키
 - [x] 데모 Next.js 앱: textarea→`<ChunkReading>` + `/api/gloss`(번들 라우트). `chunk-reading` 별칭으로
       공개 API 그대로 dogfooding.
 - [x] 문서: README(설치·번들라우트·주입식 glossFn·core·server·gloss 계약) + LICENSE(MIT) + .env.example.
-- [ ] `npm install`(prepare→tsup) · `npm test` · `npm run build`(데모) · `npx eslint` 검증
-- [ ] GitHub 레포 생성(smilepat/chunk-reading) + 초기 커밋 푸시
+- [x] `npm install`(prepare→tsup) · `npm test`(10) · `npm run build`(데모 next build) ·
+      `npx eslint` 전부 통과. lib 빌드 esm/cjs/d.ts + `. `에 "use client" 정확 배치 확인.
+- [x] GitHub 레포 생성(smilepat/chunk-reading, **private**, 기본 브랜치 main) + 초기 커밋 푸시.
 - [ ] (선택) Vercel 데모 배포 + GEMINI_API_KEY 등록
 - [ ] (선택) npm publish (지금은 `github:smilepat/chunk-reading`로 설치 가능)
 
