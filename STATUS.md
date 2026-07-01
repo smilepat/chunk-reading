@@ -27,9 +27,13 @@ Interactive Reading Coach의 **🇰🇷 직독직해 cue 기능을 독립 패키
 - [x] **Vercel 데모 배포**: <https://chunk-reading.vercel.app> (team prompt-improvement-dm-pat).
       GEMINI_API_KEY 등록(Production/Development). `/api/gloss` 라이브 스모크 통과.
       주의: PowerShell 파이프가 BOM(U+FEFF)을 주입 → `cmd`의 `<` 리다이렉션으로 키 주입해 해결.
-- [x] **소비 앱 통합(csat-mastery)**: `npm i github:smilepat/chunk-reading`(프리빌트 dist) →
-      `src/app/api/gloss`(번들 라우트) + `src/app/literal`(직독직해 페이지). 기존 학습 플로우
-      무수정, build·typecheck OK, master 푸시 완료. 기존 GEMINI_API_KEY 재사용.
+- [x] **소비 앱 통합(csat-mastery) — 프로덕션 검증 완료**: `src/app/api/gloss`(번들 라우트) +
+      `src/app/literal`(직독직해 페이지). <https://csat-mastery.vercel.app/literal> 200 + `/api/gloss`
+      cue 3개 정상. 기존 학습 플로우 무수정.
+      함정 3가지 해결: (1) **repo private → public 전환**(Vercel이 git 의존성 fetch 가능).
+      (2) csat는 **pnpm** 프로젝트 → npm으로 설치해 pnpm-lock 미갱신으로 frozen-lockfile 빌드
+      실패 → `pnpm install`로 lock 동기화. (3) csat GEMINI_API_KEY가 **HTTP-referer 제한**(브라우저용)
+      이라 서버 gloss 403 → 전용 **GLOSS_GEMINI_KEY**(제한 없는 키) 우선 사용하도록 라우트 수정.
 - [x] **패키지 배포 방식**: prebuilt `dist/` 저장소 커밋 + `prepare` 제거(설치시 빌드 X) →
       소비 앱 설치가 빠르고 devDep 불필요. 유지보수 시 `npm run build:lib` 후 dist 커밋.
 - [ ] (선택) csat-mastery `learn/[slug]`의 `passage_text`에 `<ChunkReading/>` 임베드(학습 플로우 내).
