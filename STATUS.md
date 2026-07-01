@@ -38,7 +38,10 @@ Interactive Reading Coach의 **🇰🇷 직독직해 cue 기능을 독립 패키
       최종: csat 자기 GEMINI_API_KEY로 `/api/gloss` 프로덕션 검증 완료.
 - [x] **패키지 배포 방식**: prebuilt `dist/` 저장소 커밋 + `prepare` 제거(설치시 빌드 X) →
       소비 앱 설치가 빠르고 devDep 불필요. 유지보수 시 `npm run build:lib` 후 dist 커밋.
-- [ ] (선택) csat-mastery `learn/[slug]`의 `passage_text`에 `<ChunkReading/>` 임베드(학습 플로우 내).
+- [x] **csat-mastery 학습 플로우 임베드**: `learn/[slug]`의 지문(`passage_text`)이 있는 문제에
+      "🇰🇷 직독직해로 끊어읽기" 토글(기본 접힘) 추가 → 펼치면 `<ChunkReading/>`로 그 지문 연습.
+      기존 문제 풀이 무수정, 문제 이동 시 접힘. build·lint OK, 프로덕션 배포. 실제 지문 문제
+      다수 확인(syntax application 17개 등) → 실콘텐츠에서 노출됨.
 - [ ] (선택) npm publish (지금은 `github:smilepat/chunk-reading`로 설치 가능)
 
 ## ⏭️ 다음에 할 일 (Next Actions)
