@@ -8,10 +8,20 @@ interface Chunk {
     end: number;
 }
 /**
- * Produces a Korean 직독직해 gloss for each English chunk, in the same order.
- * Inject your own (any AI/cache/backend) or use the bundled fetch client.
+ * What a gloss backend returns for the given chunks, in the same order:
+ * - `string[]` — 직독직해 glosses only (legacy shape, still fully supported)
+ * - `{ glosses, roles? }` — glosses + optional 추임새 role prompts (누가/어디로/왜…)
  */
-type GlossFn = (chunks: string[]) => Promise<string[]>;
+type GlossResult = string[] | {
+    glosses: string[];
+    roles?: string[];
+};
+/**
+ * Produces a Korean 직독직해 gloss (and optionally a 추임새 role prompt) for each
+ * English chunk. Inject your own (any AI/cache/backend) or use the bundled
+ * fetch client. Returning a plain `string[]` is always accepted.
+ */
+type GlossFn = (chunks: string[]) => Promise<GlossResult>;
 
 interface ChunkReadingProps {
     /** The English passage to practise (plain text; blank lines = paragraphs). */
@@ -67,7 +77,8 @@ declare function useEnglishVoices(): {
 };
 
 /**
- * Default gloss backend: POST { chunks } to an endpoint that returns { glosses }.
+ * Default gloss backend: POST { chunks } to an endpoint that returns
+ * { glosses, roles? } (roles = 추임새; older endpoints without it still work).
  * Point it at the bundled route (see `chunk-reading/server`) or any compatible
  * endpoint. Pass your own `GlossFn` to the component to bypass this entirely.
  */
@@ -101,6 +112,7 @@ declare function paragraphChunks(text: string, chunks: Chunk[]): {
 interface RawGloss {
     i: number;
     ko: string;
+    q?: string;
 }
 /** Build the 직독직해 prompt for an ordered list of English chunks. */
 declare function buildGlossPrompt(chunks: string[]): string;

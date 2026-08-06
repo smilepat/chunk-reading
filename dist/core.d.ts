@@ -5,10 +5,20 @@ interface Chunk {
     end: number;
 }
 /**
- * Produces a Korean 직독직해 gloss for each English chunk, in the same order.
- * Inject your own (any AI/cache/backend) or use the bundled fetch client.
+ * What a gloss backend returns for the given chunks, in the same order:
+ * - `string[]` — 직독직해 glosses only (legacy shape, still fully supported)
+ * - `{ glosses, roles? }` — glosses + optional 추임새 role prompts (누가/어디로/왜…)
  */
-type GlossFn = (chunks: string[]) => Promise<string[]>;
+type GlossResult = string[] | {
+    glosses: string[];
+    roles?: string[];
+};
+/**
+ * Produces a Korean 직독직해 gloss (and optionally a 추임새 role prompt) for each
+ * English chunk. Inject your own (any AI/cache/backend) or use the bundled
+ * fetch client. Returning a plain `string[]` is always accepted.
+ */
+type GlossFn = (chunks: string[]) => Promise<GlossResult>;
 
 /** Split text[start,end) into sense-group chunks for meaning-unit reading. */
 declare function chunkSpan(text: string, start: number, end: number): Chunk[];
@@ -38,6 +48,7 @@ declare function paragraphChunks(text: string, chunks: Chunk[]): {
 interface RawGloss {
     i: number;
     ko: string;
+    q?: string;
 }
 /** Build the 직독직해 prompt for an ordered list of English chunks. */
 declare function buildGlossPrompt(chunks: string[]): string;
@@ -47,5 +58,11 @@ declare function buildGlossPrompt(chunks: string[]): string;
  * dropped; missing indices stay "". Pure & deterministic.
  */
 declare function alignGlosses(count: number, raw: RawGloss[]): string[];
+/**
+ * Align the 추임새 role prompts (`q`) the same way alignGlosses aligns `ko`:
+ * indexed by chunk position, out-of-range/malformed dropped, missing stay "".
+ * Pure & deterministic.
+ */
+declare function alignRoles(count: number, raw: RawGloss[]): string[];
 
-export { type Chunk, type GlossFn, type RawGloss, alignGlosses, buildGlossPrompt, chunkSpan, chunkText, paragraphChunks, splitSentences };
+export { type Chunk, type GlossFn, type GlossResult, type RawGloss, alignGlosses, alignRoles, buildGlossPrompt, chunkSpan, chunkText, paragraphChunks, splitSentences };

@@ -7,13 +7,23 @@ interface GlossOptions {
     thinkingBudget?: number;
 }
 /**
- * Generate one short Korean 직독직해 cue per chunk, in the same order. Alignment
- * is by index (alignGlosses), so a dropped/reordered item never shifts the rest.
+ * Generate the full cue set per chunk, in the same order: 직독직해 gloss + 추임새
+ * role prompt. Alignment is by index (alignGlosses/alignRoles), so a dropped or
+ * reordered item never shifts the rest.
+ */
+declare function glossChunkCues(chunks: string[], opts?: GlossOptions): Promise<{
+    glosses: string[];
+    roles: string[];
+}>;
+/**
+ * Legacy shape — glosses only. Kept for API compatibility; internally one call.
  */
 declare function glossChunks(chunks: string[], opts?: GlossOptions): Promise<string[]>;
 
 /**
- * A framework-light POST handler for `{ chunks: string[] } → { glosses: string[] }`.
+ * A framework-light POST handler for
+ * `{ chunks: string[] } → { glosses: string[], roles: string[] }`
+ * (roles = 추임새 role prompts; older clients that only read `glosses` keep working).
  * Works as a Next.js App Router route or any Web-Fetch runtime:
  *
  * ```ts
@@ -25,4 +35,4 @@ declare function glossChunks(chunks: string[], opts?: GlossOptions): Promise<str
  */
 declare function createGlossRoute(opts?: GlossOptions): (req: Request) => Promise<Response>;
 
-export { type GlossOptions, createGlossRoute, glossChunks };
+export { type GlossOptions, createGlossRoute, glossChunkCues, glossChunks };

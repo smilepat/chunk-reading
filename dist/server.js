@@ -1,4 +1,4 @@
-import { buildGlossPrompt, alignGlosses } from './chunk-7ERVY736.js';
+import { buildGlossPrompt, alignRoles, alignGlosses } from './chunk-HGDBTP4K.js';
 import { Type, GoogleGenAI } from '@google/genai';
 
 var DEFAULT_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
@@ -17,18 +17,22 @@ var GLOSS_SCHEMA = {
           ko: {
             type: Type.STRING,
             description: "short \uC9C1\uB3C5\uC9C1\uD574 Korean for that chunk, in reading order"
+          },
+          q: {
+            type: Type.STRING,
+            description: "\uCD94\uC784\uC0C8 \u2014 very short Korean role prompt for the chunk (\uB204\uAC00/\uBB34\uC5C7\uC744/\uC5B4\uB514\uB85C/\uC65C/\uBB34\uC5C7\uD558\uB7EC/\uC5B4\uB5A4 \uB4F1)"
           }
         },
-        required: ["i", "ko"],
-        propertyOrdering: ["i", "ko"]
+        required: ["i", "ko", "q"],
+        propertyOrdering: ["i", "ko", "q"]
       }
     }
   },
   required: ["glosses"]
 };
-async function glossChunks(chunks, opts = {}) {
-  var _a, _b;
-  if (chunks.length === 0) return [];
+async function glossChunkCues(chunks, opts = {}) {
+  var _a, _b, _c;
+  if (chunks.length === 0) return { glosses: [], roles: [] };
   const apiKey = opts.apiKey || process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error(
@@ -49,7 +53,13 @@ async function glossChunks(chunks, opts = {}) {
   const text = res.text;
   if (!text) throw new Error("Gemini returned no text");
   const parsed = JSON.parse(text);
-  return alignGlosses(chunks.length, (_b = parsed.glosses) != null ? _b : []);
+  return {
+    glosses: alignGlosses(chunks.length, (_b = parsed.glosses) != null ? _b : []),
+    roles: alignRoles(chunks.length, (_c = parsed.glosses) != null ? _c : [])
+  };
+}
+async function glossChunks(chunks, opts = {}) {
+  return (await glossChunkCues(chunks, opts)).glosses;
 }
 
 // src/server/route.ts
@@ -71,17 +81,17 @@ function createGlossRoute(opts = {}) {
     if (!Array.isArray(chunks) || chunks.some((c) => typeof c !== "string")) {
       return json({ error: "`chunks` must be an array of strings" }, 400);
     }
-    if (chunks.length === 0) return json({ glosses: [] }, 200);
+    if (chunks.length === 0) return json({ glosses: [], roles: [] }, 200);
     if (chunks.length > 400) return json({ error: "too many chunks (max 400)" }, 413);
     try {
-      const glosses = await glossChunks(chunks, opts);
-      return json({ glosses }, 200);
+      const { glosses, roles } = await glossChunkCues(chunks, opts);
+      return json({ glosses, roles }, 200);
     } catch (e) {
       return json({ error: e instanceof Error ? e.message : "gloss failed" }, 500);
     }
   };
 }
 
-export { createGlossRoute, glossChunks };
+export { createGlossRoute, glossChunkCues, glossChunks };
 //# sourceMappingURL=server.js.map
 //# sourceMappingURL=server.js.map

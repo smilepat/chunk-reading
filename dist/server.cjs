@@ -26,16 +26,37 @@ Rules:
 - Provide a gloss for EVERY index, exactly once.
 - Korean only \u2014 no romanization, no English, no extra commentary.
 
+ALSO, for EACH chunk, give "q": a very short Korean \uCD94\uC784\uC0C8 \u2014 the guiding role-word a teacher
+murmurs BEFORE the cue to signal what this chunk answers in the sentence. Examples:
+    "President Lee went" \u2192 q "\uB204\uAC00", ko "\uC774 \uB300\uD1B5\uB839\uC740 \uAC14\uB2E4"
+    "to Italy" \u2192 q "\uC5B4\uB514\uB85C", ko "\uC774\uD0C8\uB9AC\uC544\uB85C"
+    "to meet the prime minister." \u2192 q "\uBB34\uC5C7\uD558\uB7EC", ko "\uCD1D\uB9AC\uB97C \uB9CC\uB098\uAE30 \uC704\uD574"
+    "Because the economy was struggling," \u2192 q "\uC65C", ko "\uACBD\uC81C\uAC00 \uC5B4\uB824\uC6C0\uC744 \uACAA\uACE0 \uC788\uC5C8\uAE30 \uB54C\uBB38\uC5D0"
+    "he asked" \u2192 q "\uB204\uAC00 \uC5B4\uB5BB\uAC8C \uD588\uB098", ko "\uADF8\uB294 \uC694\uCCAD\uD588\uB2E4"
+    "for new trade deals" \u2192 q "\uBB34\uC5C7\uC744", ko "\uC0C8\uB85C\uC6B4 \uBB34\uC5ED \uD611\uC815\uC744"
+    "that could help both countries" \u2192 q "\uC5B4\uB5A4", ko "\uC591\uAD6D\uC774 \uB3D5\uB294 \uB370 \uB3C4\uC6C0\uC774 \uB420 \uC218 \uC788\uB294"
+Pick the most natural one per chunk (\uB204\uAC00/\uB204\uAD6C\uB97C/\uBB34\uC5C7\uC774/\uBB34\uC5C7\uC744/\uC5B4\uB514\uB85C/\uC5B4\uB514\uC11C/\uC5B8\uC81C/\uC65C/\uC5B4\uB5BB\uAC8C/\uBB34\uC5C7\uD558\uB7EC/\uC5B4\uB5A4 \uB4F1).
+Keep q very short (1~3 \uC5B4\uC808). Korean only.
+
 Chunks:
 ${numbered}
 
-Return JSON: { "glosses": [ { "i": <index>, "ko": "<\uC9C1\uB3C5\uC9C1\uD574>" }, ... ] } covering every index.`;
+Return JSON: { "glosses": [ { "i": <index>, "ko": "<\uC9C1\uB3C5\uC9C1\uD574>", "q": "<\uCD94\uC784\uC0C8>" }, ... ] } covering every index.`;
 }
 function alignGlosses(count, raw) {
   const out = new Array(count).fill("");
   for (const g of raw) {
     if (g && Number.isInteger(g.i) && g.i >= 0 && g.i < count && typeof g.ko === "string") {
       out[g.i] = g.ko.trim();
+    }
+  }
+  return out;
+}
+function alignRoles(count, raw) {
+  const out = new Array(count).fill("");
+  for (const g of raw) {
+    if (g && Number.isInteger(g.i) && g.i >= 0 && g.i < count && typeof g.q === "string") {
+      out[g.i] = g.q.trim();
     }
   }
   return out;
@@ -58,18 +79,22 @@ var GLOSS_SCHEMA = {
           ko: {
             type: genai.Type.STRING,
             description: "short \uC9C1\uB3C5\uC9C1\uD574 Korean for that chunk, in reading order"
+          },
+          q: {
+            type: genai.Type.STRING,
+            description: "\uCD94\uC784\uC0C8 \u2014 very short Korean role prompt for the chunk (\uB204\uAC00/\uBB34\uC5C7\uC744/\uC5B4\uB514\uB85C/\uC65C/\uBB34\uC5C7\uD558\uB7EC/\uC5B4\uB5A4 \uB4F1)"
           }
         },
-        required: ["i", "ko"],
-        propertyOrdering: ["i", "ko"]
+        required: ["i", "ko", "q"],
+        propertyOrdering: ["i", "ko", "q"]
       }
     }
   },
   required: ["glosses"]
 };
-async function glossChunks(chunks, opts = {}) {
-  var _a, _b;
-  if (chunks.length === 0) return [];
+async function glossChunkCues(chunks, opts = {}) {
+  var _a, _b, _c;
+  if (chunks.length === 0) return { glosses: [], roles: [] };
   const apiKey = opts.apiKey || process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error(
@@ -90,7 +115,13 @@ async function glossChunks(chunks, opts = {}) {
   const text = res.text;
   if (!text) throw new Error("Gemini returned no text");
   const parsed = JSON.parse(text);
-  return alignGlosses(chunks.length, (_b = parsed.glosses) != null ? _b : []);
+  return {
+    glosses: alignGlosses(chunks.length, (_b = parsed.glosses) != null ? _b : []),
+    roles: alignRoles(chunks.length, (_c = parsed.glosses) != null ? _c : [])
+  };
+}
+async function glossChunks(chunks, opts = {}) {
+  return (await glossChunkCues(chunks, opts)).glosses;
 }
 
 // src/server/route.ts
@@ -112,11 +143,11 @@ function createGlossRoute(opts = {}) {
     if (!Array.isArray(chunks) || chunks.some((c) => typeof c !== "string")) {
       return json({ error: "`chunks` must be an array of strings" }, 400);
     }
-    if (chunks.length === 0) return json({ glosses: [] }, 200);
+    if (chunks.length === 0) return json({ glosses: [], roles: [] }, 200);
     if (chunks.length > 400) return json({ error: "too many chunks (max 400)" }, 413);
     try {
-      const glosses = await glossChunks(chunks, opts);
-      return json({ glosses }, 200);
+      const { glosses, roles } = await glossChunkCues(chunks, opts);
+      return json({ glosses, roles }, 200);
     } catch (e) {
       return json({ error: e instanceof Error ? e.message : "gloss failed" }, 500);
     }
@@ -124,6 +155,7 @@ function createGlossRoute(opts = {}) {
 }
 
 exports.createGlossRoute = createGlossRoute;
+exports.glossChunkCues = glossChunkCues;
 exports.glossChunks = glossChunks;
 //# sourceMappingURL=server.cjs.map
 //# sourceMappingURL=server.cjs.map

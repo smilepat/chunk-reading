@@ -223,7 +223,7 @@ function useEnglishVoices() {
 // src/react/glossClient.ts
 function createFetchGlossFn(endpoint = "/api/gloss") {
   return async (chunks) => {
-    var _a, _b;
+    var _a, _b, _c;
     const res = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -231,13 +231,21 @@ function createFetchGlossFn(endpoint = "/api/gloss") {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error((_a = data == null ? void 0 : data.error) != null ? _a : `gloss request failed (${res.status})`);
-    return (_b = data.glosses) != null ? _b : [];
+    return {
+      glosses: (_b = data.glosses) != null ? _b : [],
+      roles: (_c = data.roles) != null ? _c : []
+    };
   };
 }
 function hashText(t) {
   let h = 5381;
   for (let i = 0; i < t.length; i++) h = (h << 5) + h + t.charCodeAt(i) | 0;
   return `cr.${(h >>> 0).toString(36)}.${t.length}`;
+}
+function normalizeCues(res) {
+  var _a, _b;
+  if (Array.isArray(res)) return { glosses: res, roles: [] };
+  return { glosses: (_a = res.glosses) != null ? _a : [], roles: (_b = res.roles) != null ? _b : [] };
 }
 var S = {
   root: { display: "flex", flexDirection: "column", gap: 16, color: "#111827", fontSize: 14, lineHeight: 1.5 },
@@ -248,6 +256,10 @@ var S = {
   card: { border: "1px solid #e5e7eb", background: "#fff", borderRadius: 12, padding: 16 },
   head: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, borderBottom: "1px solid #f3f4f6", paddingBottom: 4, marginBottom: 8, fontSize: 11, fontWeight: 500, color: "#9ca3af" },
   row: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, width: "100%", textAlign: "left", border: "none", background: "transparent", borderRadius: 6, padding: "4px 8px", cursor: "pointer", font: "inherit", alignItems: "baseline" },
+  // 추임새 칸이 있을 때의 3칸 그리드 — head/row가 같은 열 폭을 써야 세로줄이 맞음
+  head3: { gridTemplateColumns: "88px 1fr 1fr" },
+  row3: { gridTemplateColumns: "88px 1fr 1fr" },
+  role: { fontSize: 13, fontWeight: 600, color: "#0d9488" },
   ko: { fontSize: 16, fontWeight: 500, color: "#1f2937" },
   enFaint: { fontSize: 18, color: "#cbd5e1" },
   enShown: { fontSize: 18, color: "#111827", background: "#fef3c7", borderRadius: 4, padding: "0 4px" },
@@ -268,6 +280,7 @@ function ChunkReading({
   const chunks = react.useMemo(() => chunkText(text), [text]);
   const paragraphs = react.useMemo(() => paragraphChunks(text, chunks), [text, chunks]);
   const [glosses, setGlosses] = react.useState(null);
+  const [roles, setRoles] = react.useState([]);
   const [loading, setLoading] = react.useState(false);
   const [error, setError] = react.useState(null);
   const [revealed, setRevealed] = react.useState(/* @__PURE__ */ new Set());
@@ -284,9 +297,10 @@ function ChunkReading({
       try {
         const cached = sessionStorage.getItem(key);
         if (cached) {
-          const arr = JSON.parse(cached);
-          if (Array.isArray(arr) && arr.length === chunks.length) {
-            setGlosses(arr);
+          const cues = normalizeCues(JSON.parse(cached));
+          if (cues.glosses.length === chunks.length) {
+            setGlosses(cues.glosses);
+            setRoles(cues.roles);
             return;
           }
         }
@@ -295,21 +309,26 @@ function ChunkReading({
     }
     if (chunks.length === 0) {
       setGlosses([]);
+      setRoles([]);
       return;
     }
     setGlosses(null);
+    setRoles([]);
     setLoading(true);
-    resolveGloss(chunks.map((c) => c.text)).then((arr) => {
+    resolveGloss(chunks.map((c) => c.text)).then((res) => {
       if (reqId.current !== id) return;
-      setGlosses(arr);
+      const cues = normalizeCues(res);
+      setGlosses(cues.glosses);
+      setRoles(cues.roles);
       try {
-        sessionStorage.setItem(key, JSON.stringify(arr));
+        sessionStorage.setItem(key, JSON.stringify(cues));
       } catch {
       }
     }).catch((e) => {
       if (reqId.current !== id) return;
       setError(e instanceof Error ? e.message : String(e));
       setGlosses([]);
+      setRoles([]);
     }).finally(() => {
       if (reqId.current === id) setLoading(false);
     });
@@ -318,6 +337,7 @@ function ChunkReading({
     load();
   }, [key]);
   const total = chunks.length;
+  const hasRoles = roles.some(Boolean);
   function reveal(gi, en) {
     setRevealed((prev) => {
       if (prev.has(gi)) return prev;
@@ -431,7 +451,8 @@ function ChunkReading({
     ] }),
     loading && /* @__PURE__ */ jsxRuntime.jsx("p", { style: S.loading, children: "\uC9C1\uB3C5\uC9C1\uD574 cue \uC0DD\uC131 \uC911\u2026" }),
     /* @__PURE__ */ jsxRuntime.jsxs("div", { style: S.card, children: [
-      /* @__PURE__ */ jsxRuntime.jsxs("div", { style: S.head, children: [
+      /* @__PURE__ */ jsxRuntime.jsxs("div", { style: hasRoles ? { ...S.head, ...S.head3 } : S.head, children: [
+        hasRoles && /* @__PURE__ */ jsxRuntime.jsx("span", { children: "\uCD94\uC784\uC0C8" }),
         /* @__PURE__ */ jsxRuntime.jsx("span", { children: "\uD55C\uAD6D\uC5B4 cue (\uC9C1\uB3C5\uC9C1\uD574)" }),
         /* @__PURE__ */ jsxRuntime.jsx("span", { children: "English (\uB20C\uB7EC\uC11C \uD655\uC778)" })
       ] }),
@@ -443,10 +464,11 @@ function ChunkReading({
           "button",
           {
             type: "button",
-            style: S.row,
+            style: hasRoles ? { ...S.row, ...S.row3 } : S.row,
             onClick: () => reveal(gi, c.text),
             title: "\uB20C\uB7EC\uC11C \uC601\uC5B4 \uD655\uC778 + \uBC1C\uC74C \uB4E3\uAE30",
             children: [
+              hasRoles && /* @__PURE__ */ jsxRuntime.jsx("span", { style: S.role, children: roles[gi] || "" }),
               /* @__PURE__ */ jsxRuntime.jsx("span", { style: S.ko, children: ko || (loading ? "\u2026" : "\u2014") }),
               /* @__PURE__ */ jsxRuntime.jsx("span", { style: isRev ? S.enShown : S.enFaint, children: c.text })
             ]
@@ -480,10 +502,22 @@ Rules:
 - Provide a gloss for EVERY index, exactly once.
 - Korean only \u2014 no romanization, no English, no extra commentary.
 
+ALSO, for EACH chunk, give "q": a very short Korean \uCD94\uC784\uC0C8 \u2014 the guiding role-word a teacher
+murmurs BEFORE the cue to signal what this chunk answers in the sentence. Examples:
+    "President Lee went" \u2192 q "\uB204\uAC00", ko "\uC774 \uB300\uD1B5\uB839\uC740 \uAC14\uB2E4"
+    "to Italy" \u2192 q "\uC5B4\uB514\uB85C", ko "\uC774\uD0C8\uB9AC\uC544\uB85C"
+    "to meet the prime minister." \u2192 q "\uBB34\uC5C7\uD558\uB7EC", ko "\uCD1D\uB9AC\uB97C \uB9CC\uB098\uAE30 \uC704\uD574"
+    "Because the economy was struggling," \u2192 q "\uC65C", ko "\uACBD\uC81C\uAC00 \uC5B4\uB824\uC6C0\uC744 \uACAA\uACE0 \uC788\uC5C8\uAE30 \uB54C\uBB38\uC5D0"
+    "he asked" \u2192 q "\uB204\uAC00 \uC5B4\uB5BB\uAC8C \uD588\uB098", ko "\uADF8\uB294 \uC694\uCCAD\uD588\uB2E4"
+    "for new trade deals" \u2192 q "\uBB34\uC5C7\uC744", ko "\uC0C8\uB85C\uC6B4 \uBB34\uC5ED \uD611\uC815\uC744"
+    "that could help both countries" \u2192 q "\uC5B4\uB5A4", ko "\uC591\uAD6D\uC774 \uB3D5\uB294 \uB370 \uB3C4\uC6C0\uC774 \uB420 \uC218 \uC788\uB294"
+Pick the most natural one per chunk (\uB204\uAC00/\uB204\uAD6C\uB97C/\uBB34\uC5C7\uC774/\uBB34\uC5C7\uC744/\uC5B4\uB514\uB85C/\uC5B4\uB514\uC11C/\uC5B8\uC81C/\uC65C/\uC5B4\uB5BB\uAC8C/\uBB34\uC5C7\uD558\uB7EC/\uC5B4\uB5A4 \uB4F1).
+Keep q very short (1~3 \uC5B4\uC808). Korean only.
+
 Chunks:
 ${numbered}
 
-Return JSON: { "glosses": [ { "i": <index>, "ko": "<\uC9C1\uB3C5\uC9C1\uD574>" }, ... ] } covering every index.`;
+Return JSON: { "glosses": [ { "i": <index>, "ko": "<\uC9C1\uB3C5\uC9C1\uD574>", "q": "<\uCD94\uC784\uC0C8>" }, ... ] } covering every index.`;
 }
 function alignGlosses(count, raw) {
   const out = new Array(count).fill("");

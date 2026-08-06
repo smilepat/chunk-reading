@@ -1,4 +1,4 @@
-export { alignGlosses, buildGlossPrompt } from './chunk-7ERVY736.js';
+export { alignGlosses, alignRoles, buildGlossPrompt } from './chunk-HGDBTP4K.js';
 
 // src/core/chunk.ts
 var STRONG = /* @__PURE__ */ new Set([
