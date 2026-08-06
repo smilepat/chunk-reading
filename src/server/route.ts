@@ -1,4 +1,4 @@
-import { glossChunks, type GlossOptions } from "./gloss";
+import { glossChunkCues, type GlossOptions } from "./gloss";
 
 function json(data: unknown, status: number): Response {
   return new Response(JSON.stringify(data), {
@@ -8,7 +8,9 @@ function json(data: unknown, status: number): Response {
 }
 
 /**
- * A framework-light POST handler for `{ chunks: string[] } → { glosses: string[] }`.
+ * A framework-light POST handler for
+ * `{ chunks: string[] } → { glosses: string[], roles: string[] }`
+ * (roles = 추임새 role prompts; older clients that only read `glosses` keep working).
  * Works as a Next.js App Router route or any Web-Fetch runtime:
  *
  * ```ts
@@ -30,11 +32,11 @@ export function createGlossRoute(opts: GlossOptions = {}) {
     if (!Array.isArray(chunks) || chunks.some((c) => typeof c !== "string")) {
       return json({ error: "`chunks` must be an array of strings" }, 400);
     }
-    if (chunks.length === 0) return json({ glosses: [] }, 200);
+    if (chunks.length === 0) return json({ glosses: [], roles: [] }, 200);
     if (chunks.length > 400) return json({ error: "too many chunks (max 400)" }, 413);
     try {
-      const glosses = await glossChunks(chunks as string[], opts);
-      return json({ glosses }, 200);
+      const { glosses, roles } = await glossChunkCues(chunks as string[], opts);
+      return json({ glosses, roles }, 200);
     } catch (e) {
       return json({ error: e instanceof Error ? e.message : "gloss failed" }, 500);
     }

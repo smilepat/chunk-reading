@@ -1,5 +1,10 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { buildGlossPrompt, alignGlosses, type RawGloss } from "../core/gloss";
+import {
+  buildGlossPrompt,
+  alignGlosses,
+  alignRoles,
+  type RawGloss,
+} from "../core/gloss";
 
 const DEFAULT_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
@@ -24,9 +29,14 @@ const GLOSS_SCHEMA = {
             type: Type.STRING,
             description: "short 직독직해 Korean for that chunk, in reading order",
           },
+          q: {
+            type: Type.STRING,
+            description:
+              "추임새 — very short Korean role prompt for the chunk (누가/무엇을/어디로/왜/무엇하러/어떤 등)",
+          },
         },
-        required: ["i", "ko"],
-        propertyOrdering: ["i", "ko"],
+        required: ["i", "ko", "q"],
+        propertyOrdering: ["i", "ko", "q"],
       },
     },
   },
@@ -43,14 +53,15 @@ export interface GlossOptions {
 }
 
 /**
- * Generate one short Korean 직독직해 cue per chunk, in the same order. Alignment
- * is by index (alignGlosses), so a dropped/reordered item never shifts the rest.
+ * Generate the full cue set per chunk, in the same order: 직독직해 gloss + 추임새
+ * role prompt. Alignment is by index (alignGlosses/alignRoles), so a dropped or
+ * reordered item never shifts the rest.
  */
-export async function glossChunks(
+export async function glossChunkCues(
   chunks: string[],
   opts: GlossOptions = {},
-): Promise<string[]> {
-  if (chunks.length === 0) return [];
+): Promise<{ glosses: string[]; roles: string[] }> {
+  if (chunks.length === 0) return { glosses: [], roles: [] };
   const apiKey = opts.apiKey || process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error(
@@ -71,5 +82,18 @@ export async function glossChunks(
   const text = res.text;
   if (!text) throw new Error("Gemini returned no text");
   const parsed = JSON.parse(text) as { glosses?: RawGloss[] };
-  return alignGlosses(chunks.length, parsed.glosses ?? []);
+  return {
+    glosses: alignGlosses(chunks.length, parsed.glosses ?? []),
+    roles: alignRoles(chunks.length, parsed.glosses ?? []),
+  };
+}
+
+/**
+ * Legacy shape — glosses only. Kept for API compatibility; internally one call.
+ */
+export async function glossChunks(
+  chunks: string[],
+  opts: GlossOptions = {},
+): Promise<string[]> {
+  return (await glossChunkCues(chunks, opts)).glosses;
 }
