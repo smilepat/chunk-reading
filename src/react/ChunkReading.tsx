@@ -8,7 +8,7 @@ import {
   type CSSProperties,
 } from "react";
 import { chunkText, paragraphChunks } from "../core/chunk";
-import type { GlossFn } from "../core/types";
+import type { GlossFn, GlossResult } from "../core/types";
 import { useEnglishVoices } from "./useEnglishVoices";
 import { createFetchGlossFn } from "./glossClient";
 
@@ -39,6 +39,12 @@ function hashText(t: string): string {
   return `cr.${(h >>> 0).toString(36)}.${t.length}`;
 }
 
+/** 백엔드 응답을 {glosses, roles}로 통일 — string[](구형)도 그대로 수용 */
+function normalizeCues(res: GlossResult): { glosses: string[]; roles: string[] } {
+  if (Array.isArray(res)) return { glosses: res, roles: [] };
+  return { glosses: res.glosses ?? [], roles: res.roles ?? [] };
+}
+
 const S: Record<string, CSSProperties> = {
   root: { display: "flex", flexDirection: "column", gap: 16, color: "#111827", fontSize: 14, lineHeight: 1.5 },
   hint: { fontSize: 12, color: "#6b7280", margin: 0 },
@@ -48,6 +54,10 @@ const S: Record<string, CSSProperties> = {
   card: { border: "1px solid #e5e7eb", background: "#fff", borderRadius: 12, padding: 16 },
   head: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, borderBottom: "1px solid #f3f4f6", paddingBottom: 4, marginBottom: 8, fontSize: 11, fontWeight: 500, color: "#9ca3af" },
   row: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, width: "100%", textAlign: "left", border: "none", background: "transparent", borderRadius: 6, padding: "4px 8px", cursor: "pointer", font: "inherit", alignItems: "baseline" },
+  // 추임새 칸이 있을 때의 3칸 그리드 — head/row가 같은 열 폭을 써야 세로줄이 맞음
+  head3: { gridTemplateColumns: "88px 1fr 1fr" },
+  row3: { gridTemplateColumns: "88px 1fr 1fr" },
+  role: { fontSize: 13, fontWeight: 600, color: "#0d9488" },
   ko: { fontSize: 16, fontWeight: 500, color: "#1f2937" },
   enFaint: { fontSize: 18, color: "#cbd5e1" },
   enShown: { fontSize: 18, color: "#111827", background: "#fef3c7", borderRadius: 4, padding: "0 4px" },
@@ -81,6 +91,7 @@ export function ChunkReading({
   const paragraphs = useMemo(() => paragraphChunks(text, chunks), [text, chunks]);
 
   const [glosses, setGlosses] = useState<string[] | null>(null);
+  const [roles, setRoles] = useState<string[]>([]); // 추임새 (없으면 빈 배열 → 2칸 레이아웃)
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [revealed, setRevealed] = useState<Set<number>>(new Set());
@@ -101,9 +112,11 @@ export function ChunkReading({
       try {
         const cached = sessionStorage.getItem(key);
         if (cached) {
-          const arr = JSON.parse(cached) as string[];
-          if (Array.isArray(arr) && arr.length === chunks.length) {
-            setGlosses(arr);
+          // 신형 {glosses, roles} 객체와 구형 string[] 캐시를 모두 수용
+          const cues = normalizeCues(JSON.parse(cached) as GlossResult);
+          if (cues.glosses.length === chunks.length) {
+            setGlosses(cues.glosses);
+            setRoles(cues.roles);
             return;
           }
         }
@@ -113,16 +126,20 @@ export function ChunkReading({
     }
     if (chunks.length === 0) {
       setGlosses([]);
+      setRoles([]);
       return;
     }
     setGlosses(null);
+    setRoles([]);
     setLoading(true);
     resolveGloss(chunks.map((c) => c.text))
-      .then((arr) => {
+      .then((res) => {
         if (reqId.current !== id) return;
-        setGlosses(arr);
+        const cues = normalizeCues(res);
+        setGlosses(cues.glosses);
+        setRoles(cues.roles);
         try {
-          sessionStorage.setItem(key, JSON.stringify(arr));
+          sessionStorage.setItem(key, JSON.stringify(cues));
         } catch {
           /* ignore */
         }
@@ -131,6 +148,7 @@ export function ChunkReading({
         if (reqId.current !== id) return;
         setError(e instanceof Error ? e.message : String(e));
         setGlosses([]); // still show the English chunks
+        setRoles([]);
       })
       .finally(() => {
         if (reqId.current === id) setLoading(false);
@@ -146,6 +164,8 @@ export function ChunkReading({
   }, [key]);
 
   const total = chunks.length;
+  // 추임새가 하나라도 있으면 왼쪽에 역할 칸을 추가한 3칸 레이아웃 사용
+  const hasRoles = roles.some(Boolean);
 
   function reveal(gi: number, en: string) {
     setRevealed((prev) => {
@@ -251,7 +271,8 @@ export function ChunkReading({
       {loading && <p style={S.loading}>직독직해 cue 생성 중…</p>}
 
       <div style={S.card}>
-        <div style={S.head}>
+        <div style={hasRoles ? { ...S.head, ...S.head3 } : S.head}>
+          {hasRoles && <span>추임새</span>}
           <span>한국어 cue (직독직해)</span>
           <span>English (눌러서 확인)</span>
         </div>
@@ -264,10 +285,11 @@ export function ChunkReading({
                 <button
                   key={gi}
                   type="button"
-                  style={S.row}
+                  style={hasRoles ? { ...S.row, ...S.row3 } : S.row}
                   onClick={() => reveal(gi, c.text)}
                   title="눌러서 영어 확인 + 발음 듣기"
                 >
+                  {hasRoles && <span style={S.role}>{roles[gi] || ""}</span>}
                   <span style={S.ko}>{ko || (loading ? "…" : "—")}</span>
                   <span style={isRev ? S.enShown : S.enFaint}>{c.text}</span>
                 </button>
