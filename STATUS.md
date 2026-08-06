@@ -1,10 +1,18 @@
 ---
 project: chunk-reading
 status: active
-progress: 93
-updated: 2026-07-01
-pc: DESKTOP-JDF6C5D
+progress: 94
+updated: 2026-08-06
+pc: DESKTOP-J5NGRMC
 ---
+
+> **2026-08-06 추가**: 한국어 cue 왼쪽에 **추임새 칸**(누가/어디로/무엇하러/왜/무엇을/어떤 …).
+> gloss 계약이 `{chunks} → {glosses, roles}`로 확장(구형 `glosses`만 읽는 소비자 무영향,
+> 구형 string[] 캐시·응답도 컴포넌트가 수용). Gemini 스키마에 `q` 필수, `alignRoles` 정렬,
+> `glossChunkCues()` 신설(`glossChunks()`는 기존 시그니처 유지). vitest 14/14,
+> lib·데모 빌드 통과, 라이브 실측: "President Lee went"→추임새 "누가"/cue "이 대통령은 갔다" 등 7청크 확인.
+> ⚠️ 기존 세션 캐시가 남아 있으면 2칸으로 보임 — "↻ cue 다시 생성"으로 갱신.
+> csat-mastery는 재설치(pnpm update chunk-reading)+재배포 시 추임새가 자동 적용됨.
 
 # chunk-reading — STATUS
 
