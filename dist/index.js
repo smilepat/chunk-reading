@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { jsxs, jsx } from 'react/jsx-runtime';
+import { jsxs, jsx, Fragment } from 'react/jsx-runtime';
 
 // src/core/chunk.ts
 var STRONG = /* @__PURE__ */ new Set([
@@ -258,7 +258,8 @@ var S = {
   head3: { gridTemplateColumns: "88px 1fr 1fr" },
   row3: { gridTemplateColumns: "88px 1fr 1fr" },
   role: { fontSize: 13, fontWeight: 600, color: "#0d9488" },
-  ko: { fontSize: 16, fontWeight: 500, color: "#1f2937" },
+  // 한국어는 의미 "확인" 수단 — 영어보다 눈에 덜 띄게 작고 연하게
+  ko: { fontSize: 13, color: "#6b7280" },
   enFaint: { fontSize: 18, color: "#cbd5e1" },
   enShown: { fontSize: 18, color: "#111827", background: "#fef3c7", borderRadius: 4, padding: "0 4px" },
   warn: { border: "1px solid #fcd34d", background: "#fffbeb", borderRadius: 8, padding: 10, fontSize: 12, color: "#b45309", margin: 0 },
@@ -346,13 +347,18 @@ function ChunkReading({
     if (speakOnReveal) speak(en, rate);
   }
   return /* @__PURE__ */ jsxs("div", { className, style: { ...S.root, ...style }, children: [
-    /* @__PURE__ */ jsxs("p", { style: S.hint, children: [
-      "\uD55C\uAD6D\uC5B4 ",
-      /* @__PURE__ */ jsx("b", { children: "\uC9C1\uB3C5\uC9C1\uD574 cue" }),
-      "\uB97C \uBCF4\uACE0 \uC601\uC5B4 \uD45C\uD604\uC744 \uB5A0\uC62C\uB824 \uBCF4\uC138\uC694. \uC601\uC5B4\uB294 \uCC98\uC74C\uC5D4 \uD76C\uBBF8\uD558\uAC8C \uAE54\uB824 \uC788\uACE0, ",
+    /* @__PURE__ */ jsx("p", { style: S.hint, children: hasRoles ? /* @__PURE__ */ jsxs(Fragment, { children: [
+      /* @__PURE__ */ jsx("b", { children: "\uCD94\uC784\uC0C8" }),
+      "(\uB204\uAC00\xB7\uC5B4\uB514\uB85C\u2026)\uB97C \uBCF4\uACE0 \uC601\uC5B4 \uC6D0\uBB38\uC744 \uB5A0\uC62C\uB824 \uBCF4\uC138\uC694. \uC601\uC5B4\uB294 \uCC98\uC74C\uC5D4 \uD76C\uBBF8\uD558\uAC8C \uAE54\uB824 \uC788\uACE0, ",
       /* @__PURE__ */ jsx("b", { children: "\uB204\uB974\uBA74 \uC120\uBA85\uD574\uC9C0\uBA70 \uC6D0\uC5B4\uBBFC \uBC1C\uC74C" }),
-      "\uC73C\uB85C \uC77D\uC5B4\uC918\uC694."
-    ] }),
+      "\uC73C\uB85C \uC77D\uC5B4\uC918\uC694. \uB73B\uC740 \uC624\uB978\uCABD \uD55C\uAD6D\uC5B4\uB85C \uD655\uC778\uD558\uC138\uC694."
+    ] }) : /* @__PURE__ */ jsxs(Fragment, { children: [
+      "\uD76C\uBBF8\uD55C \uC601\uC5B4\uB97C ",
+      /* @__PURE__ */ jsx("b", { children: "\uC5B4\uC21C \uADF8\uB300\uB85C" }),
+      " \uB5A0\uC62C\uB824 \uBCF4\uC138\uC694. ",
+      /* @__PURE__ */ jsx("b", { children: "\uB204\uB974\uBA74 \uC120\uBA85\uD574\uC9C0\uBA70 \uC6D0\uC5B4\uBBFC \uBC1C\uC74C" }),
+      "\uC73C\uB85C \uC77D\uC5B4\uC918\uC694. \uB73B\uC740 \uC624\uB978\uCABD \uD55C\uAD6D\uC5B4 cue\uB85C \uD655\uC778\uD558\uC138\uC694."
+    ] }) }),
     /* @__PURE__ */ jsxs("div", { style: S.controls, children: [
       /* @__PURE__ */ jsxs("span", { style: S.count, children: [
         revealed.size,
@@ -451,8 +457,8 @@ function ChunkReading({
     /* @__PURE__ */ jsxs("div", { style: S.card, children: [
       /* @__PURE__ */ jsxs("div", { style: hasRoles ? { ...S.head, ...S.head3 } : S.head, children: [
         hasRoles && /* @__PURE__ */ jsx("span", { children: "\uCD94\uC784\uC0C8" }),
-        /* @__PURE__ */ jsx("span", { children: "\uD55C\uAD6D\uC5B4 cue (\uC9C1\uB3C5\uC9C1\uD574)" }),
-        /* @__PURE__ */ jsx("span", { children: "English (\uB20C\uB7EC\uC11C \uD655\uC778)" })
+        /* @__PURE__ */ jsx("span", { children: "English (\uB20C\uB7EC\uC11C \uD655\uC778)" }),
+        /* @__PURE__ */ jsx("span", { children: "\uD55C\uAD6D\uC5B4 cue (\uC758\uBBF8 \uD655\uC778)" })
       ] }),
       paragraphs.map((para, pi) => /* @__PURE__ */ jsx("div", { style: pi > 0 ? S.para : void 0, children: para.map(({ c, gi }) => {
         var _a;
@@ -467,8 +473,8 @@ function ChunkReading({
             title: "\uB20C\uB7EC\uC11C \uC601\uC5B4 \uD655\uC778 + \uBC1C\uC74C \uB4E3\uAE30",
             children: [
               hasRoles && /* @__PURE__ */ jsx("span", { style: S.role, children: roles[gi] || "" }),
-              /* @__PURE__ */ jsx("span", { style: S.ko, children: ko || (loading ? "\u2026" : "\u2014") }),
-              /* @__PURE__ */ jsx("span", { style: isRev ? S.enShown : S.enFaint, children: c.text })
+              /* @__PURE__ */ jsx("span", { style: isRev ? S.enShown : S.enFaint, children: c.text }),
+              /* @__PURE__ */ jsx("span", { style: S.ko, children: ko || (loading ? "\u2026" : "\u2014") })
             ]
           },
           gi

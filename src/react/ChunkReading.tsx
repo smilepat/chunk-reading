@@ -58,7 +58,8 @@ const S: Record<string, CSSProperties> = {
   head3: { gridTemplateColumns: "88px 1fr 1fr" },
   row3: { gridTemplateColumns: "88px 1fr 1fr" },
   role: { fontSize: 13, fontWeight: 600, color: "#0d9488" },
-  ko: { fontSize: 16, fontWeight: 500, color: "#1f2937" },
+  // 한국어는 의미 "확인" 수단 — 영어보다 눈에 덜 띄게 작고 연하게
+  ko: { fontSize: 13, color: "#6b7280" },
   enFaint: { fontSize: 18, color: "#cbd5e1" },
   enShown: { fontSize: 18, color: "#111827", background: "#fef3c7", borderRadius: 4, padding: "0 4px" },
   warn: { border: "1px solid #fcd34d", background: "#fffbeb", borderRadius: 8, padding: 10, fontSize: 12, color: "#b45309", margin: 0 },
@@ -69,9 +70,10 @@ const S: Record<string, CSSProperties> = {
 /**
  * 🇰🇷 직독직해 (read-in-order) cue practice.
  *
- * Splits a passage into sense-group chunks and shows a short Korean cue for each,
- * with the English laid over faintly. The learner reads the Korean cue, recalls
- * the English, then taps the chunk to reveal it clearly and hear a native voice.
+ * Splits a passage into sense-group chunks. Each row reads left→right as
+ * 추임새(role cue) → faint English → Korean gloss: the learner sees the role cue,
+ * recalls the original English (no translation detour), taps to reveal it clearly
+ * and hear a native voice, then confirms the meaning with the Korean on the right.
  *
  * Drop-in and self-contained: inline styles (no CSS framework required), bring
  * your own cue backend via `glossFn`, or point `glossEndpoint` at the bundled
@@ -180,8 +182,18 @@ export function ChunkReading({
   return (
     <div className={className} style={{ ...S.root, ...style }}>
       <p style={S.hint}>
-        한국어 <b>직독직해 cue</b>를 보고 영어 표현을 떠올려 보세요. 영어는 처음엔
-        희미하게 깔려 있고, <b>누르면 선명해지며 원어민 발음</b>으로 읽어줘요.
+        {hasRoles ? (
+          <>
+            <b>추임새</b>(누가·어디로…)를 보고 영어 원문을 떠올려 보세요. 영어는 처음엔
+            희미하게 깔려 있고, <b>누르면 선명해지며 원어민 발음</b>으로 읽어줘요. 뜻은
+            오른쪽 한국어로 확인하세요.
+          </>
+        ) : (
+          <>
+            희미한 영어를 <b>어순 그대로</b> 떠올려 보세요. <b>누르면 선명해지며 원어민
+            발음</b>으로 읽어줘요. 뜻은 오른쪽 한국어 cue로 확인하세요.
+          </>
+        )}
       </p>
 
       <div style={S.controls}>
@@ -273,8 +285,8 @@ export function ChunkReading({
       <div style={S.card}>
         <div style={hasRoles ? { ...S.head, ...S.head3 } : S.head}>
           {hasRoles && <span>추임새</span>}
-          <span>한국어 cue (직독직해)</span>
           <span>English (눌러서 확인)</span>
+          <span>한국어 cue (의미 확인)</span>
         </div>
         {paragraphs.map((para, pi) => (
           <div key={pi} style={pi > 0 ? S.para : undefined}>
@@ -290,8 +302,8 @@ export function ChunkReading({
                   title="눌러서 영어 확인 + 발음 듣기"
                 >
                   {hasRoles && <span style={S.role}>{roles[gi] || ""}</span>}
-                  <span style={S.ko}>{ko || (loading ? "…" : "—")}</span>
                   <span style={isRev ? S.enShown : S.enFaint}>{c.text}</span>
+                  <span style={S.ko}>{ko || (loading ? "…" : "—")}</span>
                 </button>
               );
             })}

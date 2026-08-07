@@ -46,9 +46,10 @@ interface ChunkReadingProps {
 /**
  * 🇰🇷 직독직해 (read-in-order) cue practice.
  *
- * Splits a passage into sense-group chunks and shows a short Korean cue for each,
- * with the English laid over faintly. The learner reads the Korean cue, recalls
- * the English, then taps the chunk to reveal it clearly and hear a native voice.
+ * Splits a passage into sense-group chunks. Each row reads left→right as
+ * 추임새(role cue) → faint English → Korean gloss: the learner sees the role cue,
+ * recalls the original English (no translation detour), taps to reveal it clearly
+ * and hear a native voice, then confirms the meaning with the Korean on the right.
  *
  * Drop-in and self-contained: inline styles (no CSS framework required), bring
  * your own cue backend via `glossFn`, or point `glossEndpoint` at the bundled
