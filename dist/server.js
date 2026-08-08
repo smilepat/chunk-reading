@@ -1,4 +1,4 @@
-import { buildGlossPrompt, alignRoles, alignGlosses } from './chunk-HGDBTP4K.js';
+import { buildGlossPrompt, alignRoles, alignGlosses } from './chunk-2UWOYLLA.js';
 import { Type, GoogleGenAI } from '@google/genai';
 
 var DEFAULT_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";

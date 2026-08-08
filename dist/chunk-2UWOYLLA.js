@@ -30,6 +30,13 @@ murmurs BEFORE the cue to signal what this chunk answers in the sentence. Exampl
     "for new trade deals" \u2192 q "\uBB34\uC5C7\uC744", ko "\uC0C8\uB85C\uC6B4 \uBB34\uC5ED \uD611\uC815\uC744"
     "that could help both countries" \u2192 q "\uC5B4\uB5A4", ko "\uC591\uAD6D\uC774 \uB3D5\uB294 \uB370 \uB3C4\uC6C0\uC774 \uB420 \uC218 \uC788\uB294"
 Pick the most natural one per chunk (\uB204\uAC00/\uB204\uAD6C\uB97C/\uBB34\uC5C7\uC774/\uBB34\uC5C7\uC744/\uC5B4\uB514\uB85C/\uC5B4\uB514\uC11C/\uC5B8\uC81C/\uC65C/\uC5B4\uB5BB\uAC8C/\uBB34\uC5C7\uD558\uB7EC/\uC5B4\uB5A4 \uB4F1).
+For abstract/argumentative text (no clear \uB204\uAC00/\uC5B4\uB514\uB85C), prefer discourse-role \uCD94\uC784\uC0C8 instead:
+    \uC8FC\uC7A5\uC740 / \uADFC\uAC70\uB294 / \uC608\uC2DC\uB85C / \uB300\uC870\uC801\uC73C\uB85C / \uC870\uAC74\uC740 / \uACB0\uACFC\uB294 / \uC774\uC720\uB294 / \uD575\uC2EC \uAC1C\uB150\uC740 \uB4F1.
+q values must be DISCRIMINATIVE across the passage: never repeat the same bare q
+(e.g. "\uBB34\uC5C7\uC744" twice). When the same role would repeat, add ONE tiny distinguishing
+word from the chunk's meaning:
+    "we ignore the invisible advantages" \u2192 q "\uBB34\uC5C7\uC744 \uBB34\uC2DC?"
+    "to view individual actions" \u2192 q "\uBB34\uC5C7\uC744 \uBCF4\uB294?"
 Keep q very short (1~3 \uC5B4\uC808). Korean only.
 
 Chunks:
@@ -57,5 +64,5 @@ function alignRoles(count, raw) {
 }
 
 export { alignGlosses, alignRoles, buildGlossPrompt };
-//# sourceMappingURL=chunk-HGDBTP4K.js.map
-//# sourceMappingURL=chunk-HGDBTP4K.js.map
+//# sourceMappingURL=chunk-2UWOYLLA.js.map
+//# sourceMappingURL=chunk-2UWOYLLA.js.map

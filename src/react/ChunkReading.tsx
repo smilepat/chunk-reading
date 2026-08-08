@@ -61,6 +61,8 @@ const S: Record<string, CSSProperties> = {
   // 한국어는 의미 "확인" 수단 — 영어보다 눈에 덜 띄게 작고 연하게
   ko: { fontSize: 13, color: "#6b7280" },
   enFaint: { fontSize: 18, color: "#cbd5e1" },
+  // 가림 모드: 글자를 흐려서 못 읽게 하되 길이·형태 힌트는 남김 (인출 강제)
+  enHidden: { fontSize: 18, color: "#94a3b8", filter: "blur(5px)", userSelect: "none" },
   enShown: { fontSize: 18, color: "#111827", background: "#fef3c7", borderRadius: 4, padding: "0 4px" },
   warn: { border: "1px solid #fcd34d", background: "#fffbeb", borderRadius: 8, padding: 10, fontSize: 12, color: "#b45309", margin: 0 },
   loading: { fontSize: 14, color: "#9ca3af", margin: 0 },
@@ -98,6 +100,7 @@ export function ChunkReading({
   const [error, setError] = useState<string | null>(null);
   const [revealed, setRevealed] = useState<Set<number>>(new Set());
   const [rate, setRate] = useState(initialRate);
+  const [hideEnglish, setHideEnglish] = useState(false); // 가림 모드 — 희미한 영어도 못 읽게
 
   const { ready, voices, enVoices, otherVoices, voiceURI, select, speak, cancel } =
     useEnglishVoices();
@@ -217,6 +220,14 @@ export function ChunkReading({
         >
           ↺ 다시 가리기
         </button>
+        <label style={{ display: "flex", alignItems: "center", gap: 6, color: "#4b5563", cursor: "pointer" }}>
+          <input
+            type="checkbox"
+            checked={hideEnglish}
+            onChange={(e) => setHideEnglish(e.target.checked)}
+          />
+          영어 가리기
+        </label>
         <label style={{ display: "flex", alignItems: "center", gap: 8, color: "#4b5563" }}>
           속도
           <input
@@ -302,7 +313,9 @@ export function ChunkReading({
                   title="눌러서 영어 확인 + 발음 듣기"
                 >
                   {hasRoles && <span style={S.role}>{roles[gi] || ""}</span>}
-                  <span style={isRev ? S.enShown : S.enFaint}>{c.text}</span>
+                  <span style={isRev ? S.enShown : hideEnglish ? S.enHidden : S.enFaint}>
+                    {c.text}
+                  </span>
                   <span style={S.ko}>{ko || (loading ? "…" : "—")}</span>
                 </button>
               );

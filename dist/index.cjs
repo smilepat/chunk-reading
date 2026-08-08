@@ -66,6 +66,7 @@ var WEAK = /* @__PURE__ */ new Set([
   "once"
 ]);
 var MIN_WORDS = 2;
+var WH_REL = /* @__PURE__ */ new Set(["who", "whom", "whose", "which"]);
 function core(word) {
   return word.toLowerCase().replace(/^[^a-z]+/, "").replace(/[^a-z]+$/, "");
 }
@@ -84,19 +85,49 @@ function boundaryStarts(ws) {
   if (ws.length === 0) return [];
   const starts = [0];
   let count = 1;
+  let fuse = false;
   for (let i = 1; i < ws.length; i++) {
     const afterPunct = /[,;:.!?–—]$/.test(ws[i - 1].text);
     const w = core(ws[i].text);
+    const next = i + 1 < ws.length ? core(ws[i + 1].text) : "";
+    const prepRel = WEAK.has(w) && WH_REL.has(next);
     let brk = false;
     if (afterPunct) brk = true;
+    else if (fuse) brk = false;
+    else if (prepRel) brk = true;
     else if (STRONG.has(w)) brk = true;
     else if (WEAK.has(w) && count >= MIN_WORDS) brk = true;
+    fuse = prepRel;
     if (brk) {
       starts.push(i);
       count = 1;
     } else {
       count++;
     }
+  }
+  return mergeLoneFunctionWords(ws, starts);
+}
+function mergeLoneFunctionWords(ws, starts) {
+  var _a;
+  const isFn = (i) => {
+    const w = core(ws[i].text);
+    return WEAK.has(w) || STRONG.has(w);
+  };
+  let k = 0;
+  while (k < starts.length) {
+    const from = starts[k];
+    const to = (_a = starts[k + 1]) != null ? _a : ws.length;
+    if (to - from === 1 && isFn(from)) {
+      if (k + 1 < starts.length) {
+        starts.splice(k + 1, 1);
+        continue;
+      }
+      if (k > 0) {
+        starts.splice(k, 1);
+        continue;
+      }
+    }
+    k++;
   }
   return starts;
 }
@@ -263,6 +294,8 @@ var S = {
   // 한국어는 의미 "확인" 수단 — 영어보다 눈에 덜 띄게 작고 연하게
   ko: { fontSize: 13, color: "#6b7280" },
   enFaint: { fontSize: 18, color: "#cbd5e1" },
+  // 가림 모드: 글자를 흐려서 못 읽게 하되 길이·형태 힌트는 남김 (인출 강제)
+  enHidden: { fontSize: 18, color: "#94a3b8", filter: "blur(5px)", userSelect: "none" },
   enShown: { fontSize: 18, color: "#111827", background: "#fef3c7", borderRadius: 4, padding: "0 4px" },
   warn: { border: "1px solid #fcd34d", background: "#fffbeb", borderRadius: 8, padding: 10, fontSize: 12, color: "#b45309", margin: 0 },
   loading: { fontSize: 14, color: "#9ca3af", margin: 0 },
@@ -286,6 +319,7 @@ function ChunkReading({
   const [error, setError] = react.useState(null);
   const [revealed, setRevealed] = react.useState(/* @__PURE__ */ new Set());
   const [rate, setRate] = react.useState(initialRate);
+  const [hideEnglish, setHideEnglish] = react.useState(false);
   const { ready, voices, enVoices, otherVoices, voiceURI, select, speak, cancel } = useEnglishVoices();
   const key = cacheKey != null ? cacheKey : hashText(text);
   const reqId = react.useRef(0);
@@ -389,6 +423,17 @@ function ChunkReading({
           children: "\u21BA \uB2E4\uC2DC \uAC00\uB9AC\uAE30"
         }
       ),
+      /* @__PURE__ */ jsxRuntime.jsxs("label", { style: { display: "flex", alignItems: "center", gap: 6, color: "#4b5563", cursor: "pointer" }, children: [
+        /* @__PURE__ */ jsxRuntime.jsx(
+          "input",
+          {
+            type: "checkbox",
+            checked: hideEnglish,
+            onChange: (e) => setHideEnglish(e.target.checked)
+          }
+        ),
+        "\uC601\uC5B4 \uAC00\uB9AC\uAE30"
+      ] }),
       /* @__PURE__ */ jsxRuntime.jsxs("label", { style: { display: "flex", alignItems: "center", gap: 8, color: "#4b5563" }, children: [
         "\uC18D\uB3C4",
         /* @__PURE__ */ jsxRuntime.jsx(
@@ -475,7 +520,7 @@ function ChunkReading({
             title: "\uB20C\uB7EC\uC11C \uC601\uC5B4 \uD655\uC778 + \uBC1C\uC74C \uB4E3\uAE30",
             children: [
               hasRoles && /* @__PURE__ */ jsxRuntime.jsx("span", { style: S.role, children: roles[gi] || "" }),
-              /* @__PURE__ */ jsxRuntime.jsx("span", { style: isRev ? S.enShown : S.enFaint, children: c.text }),
+              /* @__PURE__ */ jsxRuntime.jsx("span", { style: isRev ? S.enShown : hideEnglish ? S.enHidden : S.enFaint, children: c.text }),
               /* @__PURE__ */ jsxRuntime.jsx("span", { style: S.ko, children: ko || (loading ? "\u2026" : "\u2014") })
             ]
           },
@@ -518,6 +563,13 @@ murmurs BEFORE the cue to signal what this chunk answers in the sentence. Exampl
     "for new trade deals" \u2192 q "\uBB34\uC5C7\uC744", ko "\uC0C8\uB85C\uC6B4 \uBB34\uC5ED \uD611\uC815\uC744"
     "that could help both countries" \u2192 q "\uC5B4\uB5A4", ko "\uC591\uAD6D\uC774 \uB3D5\uB294 \uB370 \uB3C4\uC6C0\uC774 \uB420 \uC218 \uC788\uB294"
 Pick the most natural one per chunk (\uB204\uAC00/\uB204\uAD6C\uB97C/\uBB34\uC5C7\uC774/\uBB34\uC5C7\uC744/\uC5B4\uB514\uB85C/\uC5B4\uB514\uC11C/\uC5B8\uC81C/\uC65C/\uC5B4\uB5BB\uAC8C/\uBB34\uC5C7\uD558\uB7EC/\uC5B4\uB5A4 \uB4F1).
+For abstract/argumentative text (no clear \uB204\uAC00/\uC5B4\uB514\uB85C), prefer discourse-role \uCD94\uC784\uC0C8 instead:
+    \uC8FC\uC7A5\uC740 / \uADFC\uAC70\uB294 / \uC608\uC2DC\uB85C / \uB300\uC870\uC801\uC73C\uB85C / \uC870\uAC74\uC740 / \uACB0\uACFC\uB294 / \uC774\uC720\uB294 / \uD575\uC2EC \uAC1C\uB150\uC740 \uB4F1.
+q values must be DISCRIMINATIVE across the passage: never repeat the same bare q
+(e.g. "\uBB34\uC5C7\uC744" twice). When the same role would repeat, add ONE tiny distinguishing
+word from the chunk's meaning:
+    "we ignore the invisible advantages" \u2192 q "\uBB34\uC5C7\uC744 \uBB34\uC2DC?"
+    "to view individual actions" \u2192 q "\uBB34\uC5C7\uC744 \uBCF4\uB294?"
 Keep q very short (1~3 \uC5B4\uC808). Korean only.
 
 Chunks:

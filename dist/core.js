@@ -1,4 +1,4 @@
-export { alignGlosses, alignRoles, buildGlossPrompt } from './chunk-HGDBTP4K.js';
+export { alignGlosses, alignRoles, buildGlossPrompt } from './chunk-2UWOYLLA.js';
 
 // src/core/chunk.ts
 var STRONG = /* @__PURE__ */ new Set([
@@ -62,6 +62,7 @@ var WEAK = /* @__PURE__ */ new Set([
   "once"
 ]);
 var MIN_WORDS = 2;
+var WH_REL = /* @__PURE__ */ new Set(["who", "whom", "whose", "which"]);
 function core(word) {
   return word.toLowerCase().replace(/^[^a-z]+/, "").replace(/[^a-z]+$/, "");
 }
@@ -80,19 +81,49 @@ function boundaryStarts(ws) {
   if (ws.length === 0) return [];
   const starts = [0];
   let count = 1;
+  let fuse = false;
   for (let i = 1; i < ws.length; i++) {
     const afterPunct = /[,;:.!?–—]$/.test(ws[i - 1].text);
     const w = core(ws[i].text);
+    const next = i + 1 < ws.length ? core(ws[i + 1].text) : "";
+    const prepRel = WEAK.has(w) && WH_REL.has(next);
     let brk = false;
     if (afterPunct) brk = true;
+    else if (fuse) brk = false;
+    else if (prepRel) brk = true;
     else if (STRONG.has(w)) brk = true;
     else if (WEAK.has(w) && count >= MIN_WORDS) brk = true;
+    fuse = prepRel;
     if (brk) {
       starts.push(i);
       count = 1;
     } else {
       count++;
     }
+  }
+  return mergeLoneFunctionWords(ws, starts);
+}
+function mergeLoneFunctionWords(ws, starts) {
+  var _a;
+  const isFn = (i) => {
+    const w = core(ws[i].text);
+    return WEAK.has(w) || STRONG.has(w);
+  };
+  let k = 0;
+  while (k < starts.length) {
+    const from = starts[k];
+    const to = (_a = starts[k + 1]) != null ? _a : ws.length;
+    if (to - from === 1 && isFn(from)) {
+      if (k + 1 < starts.length) {
+        starts.splice(k + 1, 1);
+        continue;
+      }
+      if (k > 0) {
+        starts.splice(k, 1);
+        continue;
+      }
+    }
+    k++;
   }
   return starts;
 }

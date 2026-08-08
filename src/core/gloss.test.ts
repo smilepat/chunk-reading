@@ -63,4 +63,10 @@ describe("buildGlossPrompt", () => {
     expect(p).toContain("추임새");
     expect(p).toContain('"q"');
   });
+
+  it("추상문용 담화 추임새와 변별(반복 금지) 규칙을 포함한다", () => {
+    const p = buildGlossPrompt(["I went"]);
+    expect(p).toContain("주장은");
+    expect(p).toContain("DISCRIMINATIVE");
+  });
 });

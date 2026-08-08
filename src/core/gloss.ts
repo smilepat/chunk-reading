@@ -46,6 +46,13 @@ murmurs BEFORE the cue to signal what this chunk answers in the sentence. Exampl
     "for new trade deals" → q "무엇을", ko "새로운 무역 협정을"
     "that could help both countries" → q "어떤", ko "양국이 돕는 데 도움이 될 수 있는"
 Pick the most natural one per chunk (누가/누구를/무엇이/무엇을/어디로/어디서/언제/왜/어떻게/무엇하러/어떤 등).
+For abstract/argumentative text (no clear 누가/어디로), prefer discourse-role 추임새 instead:
+    주장은 / 근거는 / 예시로 / 대조적으로 / 조건은 / 결과는 / 이유는 / 핵심 개념은 등.
+q values must be DISCRIMINATIVE across the passage: never repeat the same bare q
+(e.g. "무엇을" twice). When the same role would repeat, add ONE tiny distinguishing
+word from the chunk's meaning:
+    "we ignore the invisible advantages" → q "무엇을 무시?"
+    "to view individual actions" → q "무엇을 보는?"
 Keep q very short (1~3 어절). Korean only.
 
 Chunks:

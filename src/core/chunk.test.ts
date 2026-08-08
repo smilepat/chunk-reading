@@ -18,6 +18,28 @@ describe("chunkSpan", () => {
       expect(t.slice(c.start, c.end)).toBe(c.text);
     }
   });
+
+  it("keeps 전치사+관계사 (to which) as the head of the relative clause", () => {
+    const t = "obscures the degree to which social structures shape our choices";
+    const chunks = chunkSpan(t, 0, t.length);
+    expect(chunks.map((c) => c.text)).toEqual([
+      "obscures the degree",
+      "to which social structures shape our choices",
+    ]);
+  });
+
+  it("never emits a single-word function-word chunk", () => {
+    const cases = [
+      "the way in which he spoke",
+      "the extent to which we agree",
+      "He looked at",
+    ];
+    for (const t of cases) {
+      for (const c of chunkSpan(t, 0, t.length)) {
+        expect(c.text.includes(" ") || !/^(to|in|at|which|that)$/i.test(c.text)).toBe(true);
+      }
+    }
+  });
 });
 
 describe("splitSentences", () => {

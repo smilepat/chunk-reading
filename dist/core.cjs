@@ -62,6 +62,7 @@ var WEAK = /* @__PURE__ */ new Set([
   "once"
 ]);
 var MIN_WORDS = 2;
+var WH_REL = /* @__PURE__ */ new Set(["who", "whom", "whose", "which"]);
 function core(word) {
   return word.toLowerCase().replace(/^[^a-z]+/, "").replace(/[^a-z]+$/, "");
 }
@@ -80,19 +81,49 @@ function boundaryStarts(ws) {
   if (ws.length === 0) return [];
   const starts = [0];
   let count = 1;
+  let fuse = false;
   for (let i = 1; i < ws.length; i++) {
     const afterPunct = /[,;:.!?–—]$/.test(ws[i - 1].text);
     const w = core(ws[i].text);
+    const next = i + 1 < ws.length ? core(ws[i + 1].text) : "";
+    const prepRel = WEAK.has(w) && WH_REL.has(next);
     let brk = false;
     if (afterPunct) brk = true;
+    else if (fuse) brk = false;
+    else if (prepRel) brk = true;
     else if (STRONG.has(w)) brk = true;
     else if (WEAK.has(w) && count >= MIN_WORDS) brk = true;
+    fuse = prepRel;
     if (brk) {
       starts.push(i);
       count = 1;
     } else {
       count++;
     }
+  }
+  return mergeLoneFunctionWords(ws, starts);
+}
+function mergeLoneFunctionWords(ws, starts) {
+  var _a;
+  const isFn = (i) => {
+    const w = core(ws[i].text);
+    return WEAK.has(w) || STRONG.has(w);
+  };
+  let k = 0;
+  while (k < starts.length) {
+    const from = starts[k];
+    const to = (_a = starts[k + 1]) != null ? _a : ws.length;
+    if (to - from === 1 && isFn(from)) {
+      if (k + 1 < starts.length) {
+        starts.splice(k + 1, 1);
+        continue;
+      }
+      if (k > 0) {
+        starts.splice(k, 1);
+        continue;
+      }
+    }
+    k++;
   }
   return starts;
 }
@@ -168,6 +199,13 @@ murmurs BEFORE the cue to signal what this chunk answers in the sentence. Exampl
     "for new trade deals" \u2192 q "\uBB34\uC5C7\uC744", ko "\uC0C8\uB85C\uC6B4 \uBB34\uC5ED \uD611\uC815\uC744"
     "that could help both countries" \u2192 q "\uC5B4\uB5A4", ko "\uC591\uAD6D\uC774 \uB3D5\uB294 \uB370 \uB3C4\uC6C0\uC774 \uB420 \uC218 \uC788\uB294"
 Pick the most natural one per chunk (\uB204\uAC00/\uB204\uAD6C\uB97C/\uBB34\uC5C7\uC774/\uBB34\uC5C7\uC744/\uC5B4\uB514\uB85C/\uC5B4\uB514\uC11C/\uC5B8\uC81C/\uC65C/\uC5B4\uB5BB\uAC8C/\uBB34\uC5C7\uD558\uB7EC/\uC5B4\uB5A4 \uB4F1).
+For abstract/argumentative text (no clear \uB204\uAC00/\uC5B4\uB514\uB85C), prefer discourse-role \uCD94\uC784\uC0C8 instead:
+    \uC8FC\uC7A5\uC740 / \uADFC\uAC70\uB294 / \uC608\uC2DC\uB85C / \uB300\uC870\uC801\uC73C\uB85C / \uC870\uAC74\uC740 / \uACB0\uACFC\uB294 / \uC774\uC720\uB294 / \uD575\uC2EC \uAC1C\uB150\uC740 \uB4F1.
+q values must be DISCRIMINATIVE across the passage: never repeat the same bare q
+(e.g. "\uBB34\uC5C7\uC744" twice). When the same role would repeat, add ONE tiny distinguishing
+word from the chunk's meaning:
+    "we ignore the invisible advantages" \u2192 q "\uBB34\uC5C7\uC744 \uBB34\uC2DC?"
+    "to view individual actions" \u2192 q "\uBB34\uC5C7\uC744 \uBCF4\uB294?"
 Keep q very short (1~3 \uC5B4\uC808). Korean only.
 
 Chunks:
